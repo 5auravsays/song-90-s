@@ -207,6 +207,35 @@ body{
 .play-btn svg{ width:18px; height:18px; margin-left:2px; }
 .play-btn.is-playing svg{ margin-left:0; }
 
+/* ---------------- Spotify embed panel ---------------- */
+.spotify-panel{
+  position:fixed; left:0; right:0; z-index:29;
+  bottom: 94px;
+  display:flex; justify-content:center;
+  padding: 0 4vw;
+  pointer-events:none;
+}
+.spotify-panel-inner{
+  width:min(560px, 100%);
+  border-radius: 16px;
+  overflow:hidden;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+  transform: translateY(16px) scale(0.98);
+  opacity:0;
+  transition: transform .35s ease, opacity .35s ease;
+  pointer-events:none;
+}
+.spotify-panel.open .spotify-panel-inner{
+  transform: translateY(0) scale(1);
+  opacity:1;
+  pointer-events:auto;
+}
+.spotify-panel-inner iframe{ display:block; width:100%; border:none; }
+
+@media (max-width:480px){
+  .spotify-panel{ bottom: 88px; }
+}
+
 /* toast for keyboard/click hints */
 .toast{
   position:fixed; left:50%; top:90px; transform:translateX(-50%) translateY(-14px);
@@ -417,6 +446,15 @@ body{
 
 <audio id="audio" preload="none"></audio>
 
+<!-- ---------------- Official Spotify embed (real playback) ---------------- -->
+<div class="spotify-panel" id="spotifyPanel">
+  <div class="spotify-panel-inner">
+    <iframe id="spotifyFrame" src="" width="100%" height="152" frameborder="0"
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+      loading="lazy"></iframe>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -424,7 +462,7 @@ body{
    🔧 CONFIG — यहाँ से आसानी से बदलें
    ============================================================ */
 const SHOP_NAME = "सौरव की चाय";
-const SPOTIFY_PLAYLIST_URL = "https://open.spotify.com/playlist/2AVjI8Z57bqMJVtU3V9X1Q"; // 👈 अपनी playlist का link डालें
+const SPOTIFY_PLAYLIST_URL = "https://open.spotify.com/playlist/1JOJRiEcQHFq3Hc6npKvKq"; // 👈 अपनी playlist का link डालें
 
 // 🎵 प्लेलिस्ट: हर ट्रैक में title, artist, cover(emoji या image URL) और src (mp3 URL) डालें।
 // नीचे src खाली/placeholder है — असली गाने की mp3 link यहाँ डालें (अपनी होस्टिंग/legal source से)।
@@ -452,6 +490,23 @@ const TRACKS = [
 document.getElementById('shopName').textContent = SHOP_NAME;
 document.title = SHOP_NAME + " — जो पुराने गाने बजाती है";
 document.getElementById('spotifyLink').href = SPOTIFY_PLAYLIST_URL;
+
+/* ---------------- Spotify embed (official player) ---------------- */
+(function setupSpotify(){
+  const match = SPOTIFY_PLAYLIST_URL.match(/open\.spotify\.com\/(playlist|track|album)\/([a-zA-Z0-9]+)/);
+  if(match){
+    const type = match[1], id = match[2];
+    document.getElementById('spotifyFrame').src =
+      `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0`;
+  }
+})();
+const spotifyLink = document.getElementById('spotifyLink');
+const spotifyPanel = document.getElementById('spotifyPanel');
+spotifyLink.addEventListener('click', (e)=>{
+  // toggle the embedded player instead of navigating away
+  e.preventDefault();
+  spotifyPanel.classList.toggle('open');
+});
 
 /* ---------------- Clock ---------------- */
 function updateClock(){
