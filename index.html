@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>सौरव की चाय — जो पुराने गाने बजाती है</title>
+<meta name="description" content="सौरव की चाय — पुराने बॉलीवुड गाने, चाय की भाप और शाम की महफिल।">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@700;800&family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   सौरव की चाय — live chai radio page
+   Inspired by the "live-radio-in-a-scene" UI pattern (status bar,
+   giant vernacular wordmark on an illustrated backdrop, floating
+   bottom player pill). All artwork/copy here is original.
+   ============================================================ */
+
+:root{
+  --sky-top:#3c5e78;
+  --sky-bot:#c9633a;
+  --shed-red:#9c2a1c;
+  --shed-red-deep:#5e150d;
+  --band-dark: rgba(35,8,5,0.55);
+  --cream:#f6ead2;
+  --gold:#e7a53f;
+  --ink:#1c0d07;
+  --player-bg: rgba(60,24,14,0.72);
+  --player-border: rgba(246,234,210,0.18);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:'Hind', sans-serif;
+  color: var(--cream);
+  min-height:100svh;
+  position:relative;
+  overflow-x:hidden;
+  background: var(--sky-top);
+}
+
+/* ---------------- Scene (SVG illustration, full-bleed) ---------------- */
+.scene{
+  position:fixed; inset:0; z-index:0;
+  width:100%; height:100%;
+}
+.scene svg{ width:100%; height:100%; display:block; }
+
+.scene-scrim{
+  position:fixed; inset:0; z-index:1;
+  background: linear-gradient(to bottom,
+    rgba(20,8,5,0.15) 0%,
+    rgba(20,8,5,0.05) 30%,
+    rgba(20,8,5,0.35) 62%,
+    rgba(15,6,4,0.75) 100%);
+  pointer-events:none;
+}
+
+/* ---------------- Status bar ---------------- */
+.statusbar{
+  position:fixed; top:0; left:0; right:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between;
+  padding: max(16px, env(safe-area-inset-top)) 5vw 14px;
+  font-size: 0.95rem;
+}
+.statusbar .clock{
+  font-weight:600; color:var(--cream);
+  display:flex; align-items:baseline; gap:4px;
+}
+.statusbar .clock .ampm{ font-size:0.72rem; opacity:0.75; font-weight:500; }
+
+.live-pill{
+  display:flex; align-items:center; gap:8px;
+  background: rgba(15,7,4,0.35);
+  border:1px solid rgba(246,234,210,0.18);
+  padding: 6px 14px 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+}
+.live-dot{
+  width:9px; height:9px; border-radius:50%;
+  background:#3ddc72;
+  box-shadow: 0 0 8px 2px rgba(61,220,114,0.8);
+  animation: blink 1.8s ease-in-out infinite;
+}
+@keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+.live-pill .count{ font-weight:700; }
+.live-pill .word{ opacity:0.8; font-size:0.85rem; }
+
+.status-actions{ display:flex; align-items:center; gap:10px; }
+.icon-btn{
+  width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background: rgba(15,7,4,0.35);
+  border:1px solid rgba(246,234,210,0.18);
+  backdrop-filter: blur(6px);
+  cursor:pointer; text-decoration:none; color:var(--cream);
+  transition: transform .2s ease, background .2s ease;
+}
+.icon-btn:hover{ transform: translateY(-2px); background: rgba(15,7,4,0.5); }
+.icon-btn svg{ width:18px; height:18px; }
+
+/* ---------------- Wordmark ---------------- */
+.wordmark-wrap{
+  position:relative; z-index:10;
+  min-height: 100svh;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; padding: 90px 6vw 220px;
+}
+.eyebrow{
+  font-size:0.95rem; letter-spacing:0.3px; color:var(--gold);
+  margin-bottom:10px; font-weight:500; opacity:0.95;
+}
+.wordmark{
+  font-family:'Baloo Bhai 2', sans-serif;
+  font-weight:800;
+  font-size: clamp(3.2rem, 15vw, 7.5rem);
+  line-height: 0.98;
+  color: #fff;
+  text-shadow:
+    0 6px 0 var(--shed-red-deep),
+    0 10px 26px rgba(0,0,0,0.55);
+  padding: 22px 8vw;
+  position:relative;
+}
+.wordmark::before{
+  content:'';
+  position:absolute; inset: -4% -2%;
+  background: var(--band-dark);
+  z-index:-1;
+  transform: skewY(-1.2deg);
+}
+.tagline{
+  margin-top:22px;
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  color: var(--cream);
+  opacity:0.85; font-weight:400;
+  max-width: 34ch;
+}
+
+/* ---------------- Bottom player pill ---------------- */
+.player{
+  position:fixed; left:0; right:0; bottom:0; z-index:30;
+  display:flex; justify-content:center;
+  padding: 0 4vw max(16px, env(safe-area-inset-bottom));
+}
+.player-card{
+  width:min(560px, 100%);
+  background: var(--player-bg);
+  border:1px solid var(--player-border);
+  backdrop-filter: blur(16px);
+  border-radius: 26px;
+  padding: 10px 14px 10px 10px;
+  box-shadow: 0 18px 46px rgba(0,0,0,0.55);
+  display:flex; align-items:center; gap:12px;
+}
+.art{
+  width:56px; height:56px; border-radius:50%;
+  flex-shrink:0;
+  background: radial-gradient(circle at 35% 30%, #f0b866, #b5602a 60%, #6e341a 100%);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 0 0 3px rgba(246,234,210,0.15);
+  font-size:1.4rem;
+  animation: spin 6s linear infinite paused;
+}
+.art.spinning{ animation-play-state: running; }
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+.track-info{ flex:1 1 auto; min-width:0; }
+.track-title{
+  font-weight:600; font-size:0.98rem; color:#fff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.track-artist{
+  font-size:0.8rem; color:var(--cream); opacity:0.7;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.progress-row{
+  display:flex; align-items:center; gap:8px; margin-top:6px;
+}
+.progress-bar{
+  flex:1; height:4px; border-radius:2px;
+  background: rgba(246,234,210,0.22);
+  position:relative; cursor:pointer;
+}
+.progress-fill{
+  position:absolute; left:0; top:0; bottom:0; width:0%;
+  background: var(--gold); border-radius:2px;
+}
+.time{ font-size:0.7rem; opacity:0.65; min-width:34px; text-align:right; font-variant-numeric: tabular-nums; }
+
+.controls{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.ctrl-btn{
+  background:none; border:none; color:var(--cream); cursor:pointer;
+  width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+  opacity:0.8; transition: opacity .2s, transform .2s;
+}
+.ctrl-btn:hover{ opacity:1; transform: scale(1.08); }
+.ctrl-btn svg{ width:16px; height:16px; }
+.play-btn{
+  width:44px; height:44px; border-radius:50%;
+  background: #fff; color:#3a1408;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  border:none; cursor:pointer; flex-shrink:0;
+}
+.play-btn svg{ width:18px; height:18px; margin-left:2px; }
+.play-btn.is-playing svg{ margin-left:0; }
+
+/* toast for keyboard/click hints */
+.toast{
+  position:fixed; left:50%; top:90px; transform:translateX(-50%) translateY(-14px);
+  background: rgba(20,8,5,0.9);
+  border:1px solid rgba(246,234,210,0.2);
+  padding: 10px 20px; border-radius: 999px;
+  font-size:0.88rem; color:var(--cream);
+  z-index:50; opacity:0; pointer-events:none;
+  transition: opacity .35s ease, transform .35s ease;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+@media (max-width:480px){
+  .wordmark{ font-size: clamp(2.6rem, 16vw, 4.5rem); }
+  .player-card{ border-radius:22px; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     🎨 SCENE — original flat-illustration chai tapri backdrop
+     ============================================================ -->
+<div class="scene" aria-hidden="true">
+<svg viewBox="0 0 800 1400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3c5e78"/>
+      <stop offset="45%" stop-color="#a2593e"/>
+      <stop offset="100%" stop-color="#c9633a"/>
+    </linearGradient>
+    <linearGradient id="shed" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b23a25"/>
+      <stop offset="100%" stop-color="#7a1f13"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a2317"/>
+      <stop offset="100%" stop-color="#1c120b"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="1400" fill="url(#sky)"/>
+
+  <!-- distant buildings silhouette -->
+  <g opacity="0.55" fill="#5b3226">
+    <rect x="0" y="330" width="140" height="220"/>
+    <rect x="130" y="290" width="110" height="260"/>
+    <rect x="620" y="300" width="120" height="250"/>
+    <rect x="720" y="340" width="90" height="210"/>
+  </g>
+  <g opacity="0.3" fill="#2e1a12">
+    <rect x="20" y="380" width="26" height="40"/>
+    <rect x="70" y="360" width="26" height="40"/>
+    <rect x="660" y="360" width="26" height="40"/>
+  </g>
+
+  <!-- tin roof shed -->
+  <polygon points="0,560 800,500 800,600 0,650" fill="url(#shed)"/>
+  <polygon points="0,560 800,500 800,530 0,590" fill="#d9704a" opacity="0.5"/>
+
+  <!-- corrugated roof lines -->
+  <g stroke="#5e150d" stroke-width="4" opacity="0.5">
+    <line x1="0" y1="595" x2="800" y2="535"/>
+    <line x1="0" y1="615" x2="800" y2="555"/>
+    <line x1="0" y1="635" x2="800" y2="575"/>
+  </g>
+
+  <!-- back wall -->
+  <rect x="0" y="620" width="800" height="500" fill="#6e1810"/>
+  <rect x="0" y="620" width="800" height="500" fill="#000" opacity="0.12"/>
+
+  <!-- shelf with cups/kettles -->
+  <g>
+    <rect x="60" y="760" width="300" height="16" fill="#3a2014"/>
+    <circle cx="90" cy="745" r="14" fill="#e7a53f"/>
+    <circle cx="130" cy="745" r="14" fill="#f6ead2"/>
+    <circle cx="170" cy="745" r="14" fill="#e7a53f"/>
+    <circle cx="210" cy="745" r="14" fill="#f6ead2"/>
+    <circle cx="250" cy="745" r="14" fill="#e7a53f"/>
+    <rect x="290" y="720" width="46" height="40" rx="4" fill="#8a4a20"/>
+  </g>
+
+  <!-- hanging bulb -->
+  <line x1="620" y1="600" x2="620" y2="700" stroke="#3a2014" stroke-width="3"/>
+  <circle cx="620" cy="716" r="16" fill="#ffd98a">
+    <animate attributeName="opacity" values="1;0.75;1" dur="3s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- counter -->
+  <rect x="0" y="980" width="800" height="90" fill="#8a4a20"/>
+  <rect x="0" y="980" width="800" height="14" fill="#c07a3c"/>
+
+  <!-- kettle on stove -->
+  <g transform="translate(430,880)">
+    <ellipse cx="0" cy="112" rx="46" ry="10" fill="#2a1409" opacity="0.5"/>
+    <rect x="-16" y="70" width="32" height="42" fill="#3a2014"/>
+    <path d="M -34 70 Q -34 20 0 18 Q 34 20 34 70 Z" fill="#c9832f"/>
+    <rect x="-40" y="60" width="16" height="8" fill="#c9832f"/>
+    <circle cx="0" cy="14" r="8" fill="#a9691f"/>
+    <path d="M 4 8 Q 20 -20 10 -46" stroke="#f6ead2" stroke-width="6" fill="none" opacity="0.55" stroke-linecap="round">
+      <animate attributeName="opacity" values="0;0.6;0" dur="2.6s" repeatCount="indefinite"/>
+      <animate attributeName="d" values="M 4 8 Q 20 -20 10 -46; M 4 8 Q 26 -24 6 -50; M 4 8 Q 20 -20 10 -46" dur="2.6s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <!-- chai-wala silhouette pouring -->
+  <g transform="translate(300,830)">
+    <ellipse cx="0" cy="205" rx="52" ry="12" fill="#000" opacity="0.25"/>
+    <path d="M -30 200 Q -34 120 -20 60 L 20 60 Q 34 120 30 200 Z" fill="#e7a53f"/>
+    <circle cx="0" cy="34" r="26" fill="#c9863f"/>
+    <rect x="-22" y="52" width="44" height="18" fill="#e7a53f"/>
+    <path d="M 18 70 Q 60 90 74 60" stroke="#c9863f" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <ellipse cx="80" cy="52" rx="7" ry="10" fill="#3a2014"/>
+  </g>
+
+  <!-- glass with pouring stream -->
+  <g transform="translate(392,940)">
+    <path d="M -14 0 L 14 0 L 10 42 L -10 42 Z" fill="#f6ead2" opacity="0.9"/>
+    <rect x="-14" y="24" width="28" height="18" fill="#8a4212"/>
+  </g>
+  <path d="M 380 902 Q 388 918 392 940" stroke="#8a4212" stroke-width="4" fill="none" opacity="0.85"/>
+
+  <!-- customer on bench -->
+  <g transform="translate(560,900)">
+    <ellipse cx="0" cy="150" rx="46" ry="10" fill="#000" opacity="0.2"/>
+    <rect x="-30" y="60" width="60" height="90" rx="14" fill="#3a5068"/>
+    <circle cx="0" cy="34" r="24" fill="#8a4a20"/>
+    <rect x="-40" y="150" width="120" height="14" fill="#4a2c17"/>
+    <rect x="-34" y="164" width="10" height="30" fill="#2e1a10"/>
+    <rect x="60" y="164" width="10" height="30" fill="#2e1a10"/>
+  </g>
+
+  <!-- foreground floor -->
+  <rect x="0" y="1070" width="800" height="330" fill="url(#floor)"/>
+  <rect x="0" y="1070" width="800" height="10" fill="#000" opacity="0.3"/>
+
+  <!-- rain streaks -->
+  <g stroke="#cfe0ea" stroke-width="2" opacity="0.18">
+    <line x1="100" y1="0" x2="60" y2="120"/>
+    <line x1="220" y1="40" x2="185" y2="150"/>
+    <line x1="500" y1="10" x2="465" y2="130"/>
+    <line x1="700" y1="60" x2="670" y2="180"/>
+  </g>
+</svg>
+</div>
+<div class="scene-scrim" aria-hidden="true"></div>
+
+<!-- ---------------- Status bar ---------------- -->
+<div class="statusbar">
+  <div class="clock" id="clock">--:-- <span class="ampm" id="ampm">--</span></div>
+
+  <div class="live-pill">
+    <span class="live-dot"></span>
+    <span class="count" id="onlineCount">0</span>
+    <span class="word">online</span>
+  </div>
+
+  <div class="status-actions">
+    <!-- 🎧 बदलें: यहाँ अपना Spotify playlist link डालें -->
+    <a class="icon-btn" id="spotifyLink" href="https://open.spotify.com/" target="_blank" rel="noopener" aria-label="Spotify पर सुनें">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.59 14.42a.622.622 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.622.622 0 11-.277-1.215c3.809-.871 7.077-.496 9.712 1.115a.623.623 0 01.207.857zm1.223-2.723a.78.78 0 01-1.072.257c-2.688-1.652-6.786-2.131-9.965-1.166a.779.779 0 11-.452-1.49c3.632-1.102 8.147-.568 11.233 1.328a.78.78 0 01.256 1.071zm.105-2.836C14.692 9.01 9.375 8.834 6.297 9.776a.935.935 0 11-.543-1.79c3.532-1.073 9.404-.865 13.115 1.338a.935.935 0 11-.962 1.605z"/></svg>
+    </a>
+    <button class="icon-btn" id="playToggleTop" aria-label="चाय का गाना चलाएं">
+      <svg id="topPlayIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ---------------- Wordmark ---------------- -->
+<div class="wordmark-wrap">
+  <p class="eyebrow">☕ 24×7 लाइव चाय अड्डा</p>
+  <!-- 🏪 बदलें: दुकान का नाम यहाँ -->
+  <h1 class="wordmark" id="shopName">सौरव की चाय</h1>
+  <p class="tagline">पुराने गाने, गरम कुल्हड़ और शाम की महफिल — हर वक़्त चालू।</p>
+</div>
+
+<!-- ---------------- Bottom player ---------------- -->
+<div class="player">
+  <div class="player-card">
+    <div class="art" id="albumArt">☕</div>
+    <div class="track-info">
+      <div class="track-title" id="trackTitle">—</div>
+      <div class="track-artist" id="trackArtist">—</div>
+      <div class="progress-row">
+        <div class="progress-bar" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span class="time" id="timeLabel">0:00</span>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="ctrl-btn" id="prevBtn" aria-label="पिछला गाना">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      </button>
+      <button class="play-btn" id="playBtn" aria-label="चलाएं/रोकें">
+        <svg id="mainPlayIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="ctrl-btn" id="nextBtn" aria-label="अगला गाना">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<audio id="audio" preload="none"></audio>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   🔧 CONFIG — यहाँ से आसानी से बदलें
+   ============================================================ */
+const SHOP_NAME = "सौरव की चाय";
+const SPOTIFY_PLAYLIST_URL = "https://open.spotify.com/playlist/2AVjI8Z57bqMJVtU3V9X1Q"; // 👈 अपनी playlist का link डालें
+
+// 🎵 प्लेलिस्ट: हर ट्रैक में title, artist, cover(emoji या image URL) और src (mp3 URL) डालें।
+// नीचे src खाली/placeholder है — असली गाने की mp3 link यहाँ डालें (अपनी होस्टिंग/legal source से)।
+const TRACKS = [
+  {
+    title: "चाय पे चर्चा",
+    artist: "सौरव की चाय — लाइव मिक्स",
+    art: "☕",
+    src: "" // 👈 mp3 URL यहाँ डालें
+  },
+  {
+    title: "बारिश और पुरानी यादें",
+    artist: "सौरव की चाय — लाइव मिक्स",
+    art: "🌧️",
+    src: "" // 👈 mp3 URL यहाँ डालें
+  },
+  {
+    title: "कुल्हड़ वाली शाम",
+    artist: "सौरव की चाय — लाइव मिक्स",
+    art: "🍶",
+    src: "" // 👈 mp3 URL यहाँ डालें
+  }
+];
+
+document.getElementById('shopName').textContent = SHOP_NAME;
+document.title = SHOP_NAME + " — जो पुराने गाने बजाती है";
+document.getElementById('spotifyLink').href = SPOTIFY_PLAYLIST_URL;
+
+/* ---------------- Clock ---------------- */
+function updateClock(){
+  const now = new Date();
+  let h = now.getHours();
+  const m = now.getMinutes().toString().padStart(2,'0');
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12; if(h === 0) h = 12;
+  document.getElementById('clock').firstChild.textContent = `${h}:${m} `;
+  document.getElementById('ampm').textContent = ampm;
+}
+updateClock();
+setInterval(updateClock, 15000);
+
+/* ---------------- Live online counter (simulated) ---------------- */
+let online = 24 + Math.floor(Math.random()*12);
+const onlineEl = document.getElementById('onlineCount');
+onlineEl.textContent = online;
+setInterval(()=>{
+  online += (Math.random() > 0.5 ? 1 : -1) * (Math.random() > 0.7 ? 2 : 1);
+  online = Math.max(6, Math.min(58, online));
+  onlineEl.textContent = online;
+}, 4000);
+
+/* ---------------- Toast ---------------- */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2200);
+}
+
+/* ---------------- Player ---------------- */
+const audio = document.getElementById('audio');
+const playBtn = document.getElementById('playBtn');
+const mainPlayIcon = document.getElementById('mainPlayIcon');
+const playToggleTop = document.getElementById('playToggleTop');
+const topPlayIcon = document.getElementById('topPlayIcon');
+const albumArt = document.getElementById('albumArt');
+const trackTitle = document.getElementById('trackTitle');
+const trackArtist = document.getElementById('trackArtist');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const timeLabel = document.getElementById('timeLabel');
+
+const ICON_PLAY = '<path d="M8 5v14l11-7z"/>';
+const ICON_PAUSE = '<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>';
+
+let current = 0;
+
+function loadTrack(i, autoplay){
+  current = (i + TRACKS.length) % TRACKS.length;
+  const t = TRACKS[current];
+  trackTitle.textContent = t.title;
+  trackArtist.textContent = t.artist;
+  albumArt.textContent = t.art || '☕';
+  progressFill.style.width = '0%';
+  timeLabel.textContent = '0:00';
+  if(t.src){
+    audio.src = t.src;
+    if(autoplay){ audio.play().catch(()=>{}); }
+  }else{
+    audio.removeAttribute('src');
+    if(autoplay){ showToast('इस गाने का source अभी सेट नहीं है — TRACKS में mp3 link जोड़ें ☕'); }
+  }
+}
+loadTrack(0, false);
+
+function setPlayingUI(isPlaying){
+  mainPlayIcon.outerHTML = isPlaying
+    ? `<svg id="mainPlayIcon" viewBox="0 0 24 24" fill="currentColor">${ICON_PAUSE}</svg>`
+    : `<svg id="mainPlayIcon" viewBox="0 0 24 24" fill="currentColor">${ICON_PLAY}</svg>`;
+  topPlayIcon.outerHTML = isPlaying
+    ? `<svg id="topPlayIcon" viewBox="0 0 24 24" fill="currentColor">${ICON_PAUSE}</svg>`
+    : `<svg id="topPlayIcon" viewBox="0 0 24 24" fill="currentColor">${ICON_PLAY}</svg>`;
+  albumArt.classList.toggle('spinning', isPlaying);
+}
+
+function togglePlay(){
+  if(!TRACKS[current].src){
+    showToast('इस गाने का source अभी सेट नहीं है — TRACKS में mp3 link जोड़ें ☕');
+    return;
+  }
+  if(audio.paused){
+    audio.play().catch(()=> showToast('चलाने में दिक़्क़त हुई, दोबारा कोशिश करें।'));
+  }else{
+    audio.pause();
+  }
+}
+playBtn.addEventListener('click', togglePlay);
+playToggleTop.addEventListener('click', togglePlay);
+audio.addEventListener('play', ()=> setPlayingUI(true));
+audio.addEventListener('pause', ()=> setPlayingUI(false));
+
+document.getElementById('nextBtn').addEventListener('click', ()=> loadTrack(current+1, true));
+document.getElementById('prevBtn').addEventListener('click', ()=> loadTrack(current-1, true));
+audio.addEventListener('ended', ()=> loadTrack(current+1, true));
+
+audio.addEventListener('timeupdate', ()=>{
+  if(!audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  progressFill.style.width = pct + '%';
+  const s = Math.floor(audio.currentTime % 60).toString().padStart(2,'0');
+  const m = Math.floor(audio.currentTime / 60);
+  timeLabel.textContent = `${m}:${s}`;
+});
+
+progressBar.addEventListener('click', (e)=>{
+  if(!audio.duration) return;
+  const rect = progressBar.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  audio.currentTime = pct * audio.duration;
+});
+
+/* ---------------- Keyboard shortcut: space to play/pause ---------------- */
+window.addEventListener('keydown', (e)=>{
+  if(e.code === 'Space' && e.target === document.body){
+    e.preventDefault();
+    togglePlay();
+  }
+});
+</script>
+</body>
+</html>
