@@ -587,17 +587,7 @@ function setPlayingUI(isPlaying){
   albumArt.classList.toggle('spinning', isPlaying);
 }
 
-function togglePlay(){
-  if(!TRACKS[current].src){
-    showToast('इस गाने का source अभी सेट नहीं है — TRACKS में mp3 link जोड़ें ☕');
-    return;
-  }
-  if(audio.paused){
-    audio.play().catch(()=> showToast('चलाने में दिक़्क़त हुई, दोबारा कोशिश करें।'));
-  }else{
-    audio.pause();
-  }
-}
+
 playBtn.addEventListener('click', togglePlay);
 playToggleTop.addEventListener('click', togglePlay);
 audio.addEventListener('play', ()=> setPlayingUI(true));
